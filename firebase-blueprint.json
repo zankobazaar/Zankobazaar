@@ -1,0 +1,139 @@
+{
+  "entities": {
+    "Item": {
+      "title": "Item",
+      "description": "A marketplace product or service listed by a university student or staff member",
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "maxLength": 100,
+          "description": "Product or listing title"
+        },
+        "category": {
+          "type": "string",
+          "enum": ["کتێب", "ئەلیکترۆنیات", "جلوبەرگ", "کەلوپەل", "خزمەتگوزاری"],
+          "description": "Item category"
+        },
+        "price": {
+          "type": "number",
+          "description": "Price in Iraqi Dinar (IQD)"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 2000,
+          "description": "Detailed description of the item"
+        },
+        "sellerName": {
+          "type": "string",
+          "maxLength": 80,
+          "description": "Name of the seller"
+        },
+        "sellerRole": {
+          "type": "string",
+          "enum": ["قوتابی", "مامۆستا", "کارمەند"],
+          "description": "Role of the seller in the university"
+        },
+        "phone": {
+          "type": "string",
+          "maxLength": 30,
+          "description": "Contact phone number"
+        },
+        "faculty": {
+          "type": "string",
+          "maxLength": 120,
+          "description": "College or faculty of the seller"
+        },
+        "condition": {
+          "type": "string",
+          "enum": ["نوێ", "وەک نوێ", "بەکارهاتوو"],
+          "description": "Condition of the item"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Creation timestamp or label"
+        },
+        "isSold": {
+          "type": "boolean",
+          "description": "Whether the item has been marked as sold"
+        },
+        "colorHex": {
+          "type": "string",
+          "description": "Background color accent"
+        },
+        "emoji": {
+          "type": "string",
+          "description": "Visual emoji icon"
+        },
+        "location": {
+          "type": "string",
+          "description": "Campus location"
+        },
+        "sellerRating": {
+          "type": "number",
+          "description": "Seller average rating score"
+        },
+        "sellerRatingCount": {
+          "type": "number",
+          "description": "Number of seller ratings received"
+        },
+        "ownerId": {
+          "type": "string",
+          "description": "UID of the owner or creator"
+        }
+      },
+      "required": ["title", "category", "price", "description", "sellerName", "sellerRole"]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "University user profile details",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "maxLength": 80,
+          "description": "User display name"
+        },
+        "email": {
+          "type": "string",
+          "maxLength": 120,
+          "description": "University email address"
+        },
+        "role": {
+          "type": "string",
+          "enum": ["قوتابی", "مامۆستا", "کارمەند"],
+          "description": "Academic role"
+        },
+        "faculty": {
+          "type": "string",
+          "maxLength": 120,
+          "description": "Faculty or college"
+        },
+        "phone": {
+          "type": "string",
+          "maxLength": 30,
+          "description": "Phone number"
+        },
+        "rating": {
+          "type": "number",
+          "description": "Overall seller star rating"
+        },
+        "ratingCount": {
+          "type": "number",
+          "description": "Total ratings count"
+        }
+      },
+      "required": ["name", "role"]
+    }
+  },
+  "firestore": {
+    "/items/{itemId}": {
+      "schema": "Item",
+      "description": "Public marketplace items collection"
+    },
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profile collection"
+    }
+  }
+}
