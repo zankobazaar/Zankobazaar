@@ -1,5 +1,5 @@
 import React from 'react';
-import { Heart, CheckCircle2, Trash2, Star } from 'lucide-react';
+import { Heart, CheckCircle2, Trash2, Star, Camera } from 'lucide-react';
 import { MarketItem, LanguageCode } from '../types';
 import { formatPrice } from '../utils/formatters';
 import { TRANSLATIONS } from '../utils/translations';
@@ -22,18 +22,37 @@ export const ItemCard: React.FC<ItemCardProps> = ({
   language = 'ckb',
 }) => {
   const t = TRANSLATIONS[language] || TRANSLATIONS.ckb;
+  const hasImages = item.images && item.images.length > 0;
+  const displayImage = hasImages ? item.images![0] : item.imageUrl;
 
   return (
     <article
       onClick={() => onClick(item)}
       className="group relative bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl overflow-hidden hover:shadow-md hover:border-blue-400 dark:hover:border-blue-500/50 transition-all cursor-pointer flex flex-col text-start"
     >
-      {/* Top Media / Emoji Visual Container */}
+      {/* Top Media Container: Image or Emoji */}
       <div
-        className="relative h-36 sm:h-44 flex items-center justify-center text-4xl sm:text-5xl select-none transition-transform group-hover:scale-[1.02]"
+        className="relative h-36 sm:h-44 flex items-center justify-center text-4xl sm:text-5xl select-none transition-transform group-hover:scale-[1.02] overflow-hidden"
         style={{ backgroundColor: item.colorHex || '#e2e8f0' }}
       >
-        <span>{item.emoji || '📦'}</span>
+        {displayImage ? (
+          <img
+            src={displayImage}
+            alt={item.title}
+            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+            loading="lazy"
+          />
+        ) : (
+          <span>{item.emoji || '📦'}</span>
+        )}
+
+        {/* Multi-image badge */}
+        {hasImages && item.images!.length > 1 && (
+          <div className="absolute top-2.5 end-2.5 bg-slate-900/70 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 backdrop-blur-xs">
+            <Camera className="w-3 h-3" />
+            <span>{item.images!.length}</span>
+          </div>
+        )}
 
         {/* Favorite Button */}
         <button
@@ -68,7 +87,7 @@ export const ItemCard: React.FC<ItemCardProps> = ({
 
         {/* Sold Badge */}
         {item.isSold && (
-          <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-[2px] flex items-center justify-center">
+          <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center">
             <span className="text-white bg-emerald-600 px-3 py-1 rounded-lg text-xs font-bold tracking-wide flex items-center gap-1">
               <CheckCircle2 className="w-3.5 h-3.5" />
               فرۆشراوە

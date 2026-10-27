@@ -25,6 +25,8 @@ export interface MarketItem {
   location?: string;
   sellerRating?: number;
   sellerRatingCount?: number;
+  images?: string[]; // Multiple photos support
+  imageUrl?: string;
 }
 
 export interface UserProfile {
@@ -48,6 +50,17 @@ export interface ChatMessage {
   id: string;
   sender: 'bot' | 'me';
   text: string;
+  time: string;
+}
+
+export interface DirectMessage {
+  id: string;
+  itemId: string;
+  sender: 'me' | 'seller';
+  text?: string;
+  audioUrl?: string; // Voice recording Base64 / Blob URL
+  audioDuration?: number; // Duration in seconds
+  timestamp: number;
   time: string;
 }
 

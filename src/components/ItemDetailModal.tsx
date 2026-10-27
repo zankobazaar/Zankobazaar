@@ -14,7 +14,10 @@ import {
   UserCheck,
   Star,
   Sparkles,
-  Award,
+  ChevronLeft,
+  ChevronRight,
+  Mic,
+  Camera,
 } from 'lucide-react';
 import { MarketItem, AppSettings } from '../types';
 import { formatPrice, getWhatsAppLink } from '../utils/formatters';
@@ -33,6 +36,7 @@ interface ItemDetailModalProps {
   onDeleteItem?: (id: string) => void;
   onOpenReport?: (itemTitle: string) => void;
   onRateSeller?: (itemId: string, rating: number) => void;
+  onOpenSellerChat?: (item: MarketItem) => void;
 }
 
 export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
@@ -47,10 +51,15 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
   onDeleteItem,
   onOpenReport,
   onRateSeller,
+  onOpenSellerChat,
 }) => {
   const t = TRANSLATIONS[settings.language] || TRANSLATIONS.ckb;
   const [quickMessage, setQuickMessage] = useState('');
   const [phoneRevealed, setPhoneRevealed] = useState(!settings.hidePhone);
+
+  // Multiple Images gallery state
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const imagesList = item.images && item.images.length > 0 ? item.images : (item.imageUrl ? [item.imageUrl] : []);
 
   // Star-rating input component state
   const [hoverRating, setHoverRating] = useState<number | null>(null);
@@ -108,6 +117,18 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
     }
   };
 
+  const nextImage = () => {
+    if (imagesList.length > 1) {
+      setCurrentImageIndex((prev) => (prev + 1) % imagesList.length);
+    }
+  };
+
+  const prevImage = () => {
+    if (imagesList.length > 1) {
+      setCurrentImageIndex((prev) => (prev - 1 + imagesList.length) % imagesList.length);
+    }
+  };
+
   const activeHoverOrSelected = hoverRating !== null ? hoverRating : selectedRating;
 
   return (
@@ -119,7 +140,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="bg-white dark:bg-slate-900 w-full sm:max-w-xl max-h-[90vh] overflow-y-auto rounded-t-3xl sm:rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl p-5 sm:p-6 text-start">
+      <div className="bg-white dark:bg-slate-900 w-full sm:max-w-xl max-h-[92vh] overflow-y-auto rounded-t-3xl sm:rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl p-5 sm:p-6 text-start">
         {/* Header Action Row */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
@@ -162,25 +183,83 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
           </button>
         </div>
 
-        {/* Media / Category Visual */}
-        <div
-          className="relative h-44 sm:h-52 rounded-2xl flex items-center justify-center text-6xl shadow-inner mb-4 overflow-hidden"
-          style={{ backgroundColor: item.colorHex || '#dbeafe' }}
-        >
-          <span>{item.emoji || '📦'}</span>
+        {/* ========================================================================= */}
+        {/* MULTI-IMAGE CAROUSEL & GALLERY (زیادکردنی زیاتر لە وێنەیەک)                 */}
+        {/* ========================================================================= */}
+        <div className="mb-4">
+          <div
+            className="relative h-52 sm:h-64 rounded-2xl flex items-center justify-center shadow-inner overflow-hidden select-none bg-slate-100 dark:bg-slate-800"
+            style={{ backgroundColor: imagesList.length === 0 ? (item.colorHex || '#dbeafe') : undefined }}
+          >
+            {imagesList.length > 0 ? (
+              <img
+                src={imagesList[currentImageIndex]}
+                alt={`${item.title} - ${currentImageIndex + 1}`}
+                className="w-full h-full object-cover transition-all duration-300"
+              />
+            ) : (
+              <span className="text-6xl">{item.emoji || '📦'}</span>
+            )}
 
-          {item.isSold && (
-            <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center">
-              <span className="text-white bg-emerald-600 px-4 py-1.5 rounded-xl font-bold flex items-center gap-1.5 shadow-lg">
-                <CheckCircle2 className="w-4 h-4" />
-                فرۆشراوە / Sold
-              </span>
+            {/* Next / Previous arrows if multiple images exist */}
+            {imagesList.length > 1 && (
+              <>
+                <button
+                  type="button"
+                  onClick={prevImage}
+                  className="absolute start-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-slate-900/60 text-white flex items-center justify-center hover:bg-slate-900/90 transition-colors shadow-md backdrop-blur-xs"
+                  aria-label="Previous image"
+                >
+                  <ChevronLeft className="w-5 h-5 rtl:rotate-180" />
+                </button>
+                <button
+                  type="button"
+                  onClick={nextImage}
+                  className="absolute end-2.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-slate-900/60 text-white flex items-center justify-center hover:bg-slate-900/90 transition-colors shadow-md backdrop-blur-xs"
+                  aria-label="Next image"
+                >
+                  <ChevronRight className="w-5 h-5 rtl:rotate-180" />
+                </button>
+                {/* Photo counter index badge */}
+                <div className="absolute top-3 end-3 bg-slate-950/70 text-white text-[11px] font-bold px-2.5 py-0.5 rounded-full backdrop-blur-sm">
+                  {currentImageIndex + 1} / {imagesList.length}
+                </div>
+              </>
+            )}
+
+            {item.isSold && (
+              <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center">
+                <span className="text-white bg-emerald-600 px-4 py-1.5 rounded-xl font-bold flex items-center gap-1.5 shadow-lg">
+                  <CheckCircle2 className="w-4 h-4" />
+                  فرۆشراوە / Sold
+                </span>
+              </div>
+            )}
+
+            <div className="absolute bottom-3 end-3 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md px-3 py-1 rounded-lg text-xs font-bold text-slate-800 dark:text-slate-200 shadow-xs">
+              {item.condition}
+            </div>
+          </div>
+
+          {/* Clickable Image Thumbnails Strip */}
+          {imagesList.length > 1 && (
+            <div className="flex items-center gap-2 overflow-x-auto pt-2 pb-1">
+              {imagesList.map((img, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => setCurrentImageIndex(idx)}
+                  className={`w-14 h-14 rounded-xl overflow-hidden border-2 shrink-0 transition-transform ${
+                    currentImageIndex === idx
+                      ? 'border-blue-600 scale-105 shadow-sm'
+                      : 'border-slate-200 dark:border-slate-700 opacity-70 hover:opacity-100'
+                  }`}
+                >
+                  <img src={img} alt="" className="w-full h-full object-cover" />
+                </button>
+              ))}
             </div>
           )}
-
-          <div className="absolute bottom-3 end-3 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md px-3 py-1 rounded-lg text-xs font-bold text-slate-800 dark:text-slate-200">
-            {item.condition}
-          </div>
         </div>
 
         {/* Category & Status */}
@@ -250,9 +329,22 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
         </div>
 
         {/* ========================================================================= */}
-        {/* VISUALLY APPEALING STAR-RATING INPUT COMPONENT (Using Lucide Icons)        */}
+        {/* DIRECT SELLER CHAT & VOICE NOTE BUTTON (چات و نامەی دەنگی لەگەڵ فرۆشیار)   */}
         {/* ========================================================================= */}
-        <div className="relative overflow-hidden bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-300/80 dark:border-amber-700/60 rounded-2xl p-4 sm:p-5 mb-5 shadow-sm">
+        <div className="mb-4">
+          <button
+            type="button"
+            onClick={() => onOpenSellerChat && onOpenSellerChat(item)}
+            className="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-indigo-600 via-blue-600 to-blue-700 hover:from-indigo-700 hover:to-blue-800 text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2.5 shadow-md shadow-blue-500/25 transition-transform hover:scale-[1.01] active:scale-98"
+          >
+            <MessageCircle className="w-4 h-4" />
+            <span>چات لەگەڵ فرۆشیار و ناردنی دەنگ (Voice Note)</span>
+            <Mic className="w-3.5 h-3.5 text-amber-300" />
+          </button>
+        </div>
+
+        {/* VISUALLY APPEALING STAR-RATING INPUT COMPONENT (Using Lucide Icons) */}
+        <div className="relative overflow-hidden bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent border border-amber-300/80 dark:border-amber-700/60 rounded-2xl p-4 mb-4 shadow-sm">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <div className="flex items-center gap-1.5 text-xs font-black text-amber-900 dark:text-amber-300">
@@ -280,7 +372,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                       onClick={() => handleStarClick(starVal)}
                       onMouseEnter={() => setHoverRating(starVal)}
                       onMouseLeave={() => setHoverRating(null)}
-                      className="group relative p-1.5 rounded-lg transition-transform hover:scale-125 active:scale-95 focus:outline-none"
+                      className="group relative p-1 rounded-lg transition-transform hover:scale-125 active:scale-95 focus:outline-none"
                       aria-label={`${starVal} ئەستێرە`}
                     >
                       <Star
@@ -295,7 +387,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
                 })}
               </div>
 
-              {/* Dynamic Feedback Text based on Hover or Click */}
+              {/* Dynamic Feedback Text */}
               <div className="text-[11px] font-bold text-amber-700 dark:text-amber-400 flex items-center gap-1 min-h-[18px]">
                 {activeHoverOrSelected > 0 ? (
                   <>
@@ -322,12 +414,12 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
           </div>
         </div>
 
-        {/* Contact Actions */}
-        <div className="space-y-3 mb-5">
+        {/* Call & WhatsApp actions */}
+        <div className="space-y-3 mb-4">
           {!phoneRevealed ? (
             <button
               onClick={handleRequestPhone}
-              className="w-full py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-sm transition-all"
+              className="w-full py-2.5 px-4 rounded-xl bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm transition-all"
             >
               <Phone className="w-4 h-4" />
               <span>{t.requestPhone}</span>

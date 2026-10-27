@@ -30,6 +30,7 @@ import { ItemDetailModal } from './components/ItemDetailModal';
 import { AddListingModal } from './components/AddListingModal';
 import { ChatbotModal } from './components/ChatbotModal';
 import { UniversitiesModal } from './components/UniversitiesModal';
+import { SellerChatModal } from './components/SellerChatModal';
 import { ProfileView } from './components/ProfileView';
 import { Toast } from './components/Toast';
 import {
@@ -136,6 +137,7 @@ export default function App() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isChatbotOpen, setIsChatbotOpen] = useState(false);
   const [isUniversitiesOpen, setIsUniversitiesOpen] = useState(false);
+  const [chattingItem, setChattingItem] = useState<MarketItem | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Home Contact form state
@@ -1024,10 +1026,22 @@ export default function App() {
           onToggleSold={handleToggleSold}
           onDeleteItem={handleDeleteItem}
           onRateSeller={handleRateSeller}
+          onOpenSellerChat={(it) => setChattingItem(it)}
           onOpenReport={(title) => {
             setActiveTab('profile');
             showToast(`فۆرمی ڕاپۆرتکردن بۆ "${title}" کرایەوە`);
           }}
+        />
+      )}
+
+      {/* Direct Seller Chat Modal with Voice Notes */}
+      {chattingItem && (
+        <SellerChatModal
+          item={chattingItem}
+          isOpen={!!chattingItem}
+          onClose={() => setChattingItem(null)}
+          language={settings.language}
+          onToast={showToast}
         />
       )}
 

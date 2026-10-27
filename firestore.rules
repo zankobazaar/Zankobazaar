@@ -26,5 +26,10 @@ service cloud.firestore {
       allow read: if isValidId(userId);
       allow write: if isValidId(userId);
     }
+
+    // Direct seller chats
+    match /chats/{chatId}/messages/{messageId} {
+      allow read, write: if isValidId(chatId) && isValidId(messageId);
+    }
   }
 }

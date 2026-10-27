@@ -80,6 +80,10 @@
         "ownerId": {
           "type": "string",
           "description": "UID of the owner or creator"
+        },
+        "images": {
+          "type": "array",
+          "description": "List of photo URLs or base64 images for the product"
         }
       },
       "required": ["title", "category", "price", "description", "sellerName", "sellerRole"]
