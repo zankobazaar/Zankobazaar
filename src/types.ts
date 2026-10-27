@@ -30,13 +30,17 @@ export interface MarketItem {
 }
 
 export interface UserProfile {
+  uid?: string;
   name: string;
   email: string;
   role: UserRole;
   faculty: string;
   phone: string;
+  phoneNumber?: string;
+  photoURL?: string;
   rating?: number;
   ratingCount?: number;
+  authProvider?: 'google' | 'phone' | 'guest';
 }
 
 export interface AppSettings {

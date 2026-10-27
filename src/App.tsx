@@ -32,6 +32,7 @@ import { ChatbotModal } from './components/ChatbotModal';
 import { UniversitiesModal } from './components/UniversitiesModal';
 import { SellerChatModal } from './components/SellerChatModal';
 import { ProfileView } from './components/ProfileView';
+import { AuthModal } from './components/AuthModal';
 import { Toast } from './components/Toast';
 import {
   subscribeToMarketItems,
@@ -39,6 +40,13 @@ import {
   updateMarketItemInFirestore,
   deleteMarketItemFromFirestore,
 } from './services/itemService';
+import {
+  subscribeToAuth,
+  logoutUser,
+  saveUserData,
+  getUserDataFromFirestore,
+} from './services/authService';
+import { auth } from './lib/firebase';
 
 const STORAGE_KEY = 'zb_university_market_v3_clean';
 
@@ -83,6 +91,44 @@ export default function App() {
       }
     );
     return () => unsubscribe();
+  }, []);
+
+  // Firebase Auth state listener
+  useEffect(() => {
+    const unsubAuth = subscribeToAuth(async (authUser) => {
+      if (authUser) {
+        try {
+          const remoteProfile = await getUserDataFromFirestore(authUser.uid);
+          setProfile((prev) => ({
+            ...prev,
+            uid: authUser.uid,
+            name: remoteProfile?.name || authUser.displayName || prev.name,
+            email: authUser.email || remoteProfile?.email || prev.email,
+            phone: remoteProfile?.phone || authUser.phoneNumber || prev.phone,
+            phoneNumber: authUser.phoneNumber || remoteProfile?.phoneNumber || prev.phoneNumber,
+            photoURL: authUser.photoURL || remoteProfile?.photoURL || prev.photoURL,
+            faculty: remoteProfile?.faculty || prev.faculty,
+            role: remoteProfile?.role || prev.role,
+            rating: remoteProfile?.rating ?? prev.rating,
+            ratingCount: remoteProfile?.ratingCount ?? prev.ratingCount,
+            authProvider: authUser.phoneNumber
+              ? 'phone'
+              : authUser.providerData[0]?.providerId.includes('google')
+              ? 'google'
+              : 'guest',
+          }));
+        } catch (e) {
+          console.warn('Error reading user profile from Firestore:', e);
+        }
+      } else {
+        setProfile((prev) => {
+          if (!prev.uid) return prev;
+          const { uid, photoURL, phoneNumber, authProvider, ...rest } = prev;
+          return { ...rest };
+        });
+      }
+    });
+    return () => unsubAuth();
   }, []);
 
   const [profile, setProfile] = useState<UserProfile>(() => {
@@ -137,6 +183,7 @@ export default function App() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isChatbotOpen, setIsChatbotOpen] = useState(false);
   const [isUniversitiesOpen, setIsUniversitiesOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [chattingItem, setChattingItem] = useState<MarketItem | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -352,6 +399,37 @@ export default function App() {
     showToast('داتاکان پاککرانەوە و بەتاڵ کران');
   };
 
+  // Auth handlers
+  const handleAuthSuccess = (updatedData: Partial<UserProfile>) => {
+    setProfile((prev) => ({
+      ...prev,
+      ...updatedData,
+    }));
+    showToast('بە سەرکەوتوویی چووە ژوورەوە!');
+  };
+
+  const handleLogout = async () => {
+    try {
+      await logoutUser();
+      setProfile((prev) => {
+        const { uid, photoURL, phoneNumber, authProvider, ...rest } = prev;
+        return rest;
+      });
+      showToast('بە سەرکەوتوویی دەرچوویت لە هەژمار');
+    } catch (e) {
+      showToast('هەڵە لە دەرچوون');
+    }
+  };
+
+  const handleUpdateProfile = (newProfile: UserProfile) => {
+    setProfile(newProfile);
+    if (auth.currentUser) {
+      saveUserData(auth.currentUser, newProfile).catch((err) =>
+        console.warn('Failed to sync updated profile to Firestore:', err)
+      );
+    }
+  };
+
   // Handle Home Contact submit
   const handleHomeContactSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -421,6 +499,8 @@ export default function App() {
         onOpenFavorites={() => setActiveTab('favorites')}
         onOpenUniversities={() => setIsUniversitiesOpen(true)}
         settings={settings}
+        currentUser={profile}
+        onOpenAuth={() => setIsAuthModalOpen(true)}
         onToggleTheme={() =>
           setSettings((prev) => ({
             ...prev,
@@ -983,7 +1063,7 @@ export default function App() {
         {activeTab === 'profile' && (
           <ProfileView
             profile={profile}
-            onUpdateProfile={(p) => setProfile(p)}
+            onUpdateProfile={handleUpdateProfile}
             settings={settings}
             onUpdateSettings={(s) => setSettings(s)}
             myItems={myItems}
@@ -995,6 +1075,8 @@ export default function App() {
             onToggleFavorite={handleToggleFavorite}
             onDeleteItem={handleDeleteItem}
             onToggleSold={handleToggleSold}
+            onOpenAuth={() => setIsAuthModalOpen(true)}
+            onLogout={handleLogout}
           />
         )}
       </main>
@@ -1068,6 +1150,15 @@ export default function App() {
       <UniversitiesModal
         isOpen={isUniversitiesOpen}
         onClose={() => setIsUniversitiesOpen(false)}
+        language={settings.language}
+      />
+
+      {/* Firebase Authentication Modal */}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        onAuthSuccess={handleAuthSuccess}
+        onToast={showToast}
         language={settings.language}
       />
 

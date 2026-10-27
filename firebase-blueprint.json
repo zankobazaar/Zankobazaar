@@ -90,9 +90,13 @@
     },
     "UserProfile": {
       "title": "UserProfile",
-      "description": "University user profile details",
+      "description": "University user profile details and authentication record",
       "type": "object",
       "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Firebase Authentication User UID"
+        },
         "name": {
           "type": "string",
           "maxLength": 80,
@@ -102,6 +106,15 @@
           "type": "string",
           "maxLength": 120,
           "description": "University email address"
+        },
+        "phoneNumber": {
+          "type": "string",
+          "maxLength": 30,
+          "description": "Verified phone number"
+        },
+        "photoURL": {
+          "type": "string",
+          "description": "Profile picture URL"
         },
         "role": {
           "type": "string",
@@ -116,7 +129,7 @@
         "phone": {
           "type": "string",
           "maxLength": 30,
-          "description": "Phone number"
+          "description": "Contact phone number"
         },
         "rating": {
           "type": "number",
@@ -125,9 +138,13 @@
         "ratingCount": {
           "type": "number",
           "description": "Total ratings count"
+        },
+        "lastLogin": {
+          "type": "string",
+          "description": "Timestamp of the user's last login"
         }
       },
-      "required": ["name", "role"]
+      "required": ["uid"]
     }
   },
   "firestore": {

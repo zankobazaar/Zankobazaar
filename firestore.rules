@@ -12,7 +12,8 @@ service cloud.firestore {
 
     // Public marketplace items collection
     match /items/{itemId} {
-      allow read: if isValidId(itemId);
+      allow get: if isValidId(itemId);
+      allow list: if true;
       allow create: if isValidId(itemId) 
         && request.resource.data.title is string 
         && request.resource.data.title.size() <= 120
@@ -23,13 +24,21 @@ service cloud.firestore {
 
     // User profiles collection
     match /users/{userId} {
-      allow read: if isValidId(userId);
+      allow get: if isValidId(userId);
+      allow list: if true;
       allow write: if isValidId(userId);
     }
 
     // Direct seller chats
     match /chats/{chatId}/messages/{messageId} {
-      allow read, write: if isValidId(chatId) && isValidId(messageId);
+      allow get: if isValidId(chatId) && isValidId(messageId);
+      allow list: if isValidId(chatId);
+      allow write: if isValidId(chatId) && isValidId(messageId);
+    }
+
+    // Connectivity test
+    match /test/{docId} {
+      allow read: if true;
     }
   }
 }

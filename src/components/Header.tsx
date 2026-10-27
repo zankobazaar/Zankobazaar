@@ -1,6 +1,6 @@
 import React from 'react';
-import { Moon, Sun, Heart, Plus, Globe, Building2 } from 'lucide-react';
-import { AppSettings, LanguageCode } from '../types';
+import { Moon, Sun, Heart, Plus, Globe, Building2, User as UserIcon, LogIn } from 'lucide-react';
+import { AppSettings, LanguageCode, UserProfile } from '../types';
 import { TRANSLATIONS } from '../utils/translations';
 
 interface HeaderProps {
@@ -12,6 +12,8 @@ interface HeaderProps {
   onToggleTheme: () => void;
   onSelectLanguage: (lang: LanguageCode) => void;
   onGoHome: () => void;
+  currentUser?: UserProfile | null;
+  onOpenAuth: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -23,6 +25,8 @@ export const Header: React.FC<HeaderProps> = ({
   onToggleTheme,
   onSelectLanguage,
   onGoHome,
+  currentUser,
+  onOpenAuth,
 }) => {
   const t = TRANSLATIONS[settings.language] || TRANSLATIONS.ckb;
 
@@ -135,6 +139,40 @@ export const Header: React.FC<HeaderProps> = ({
               </span>
             )}
           </button>
+
+          {/* User Sign In / Profile Button */}
+          {currentUser?.uid ? (
+            <button
+              onClick={onOpenAuth}
+              className="flex items-center gap-1.5 p-1 sm:px-2.5 sm:py-1 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+              title={currentUser.name}
+              aria-label="هەژماری بەکارهێنەر"
+            >
+              {currentUser.photoURL ? (
+                <img
+                  src={currentUser.photoURL}
+                  alt={currentUser.name}
+                  className="w-7 h-7 rounded-lg object-cover ring-1 ring-emerald-500"
+                />
+              ) : (
+                <div className="w-7 h-7 rounded-lg bg-emerald-600 text-white font-black text-xs flex items-center justify-center">
+                  {currentUser.name.trim()[0] || 'U'}
+                </div>
+              )}
+              <span className="hidden sm:inline text-xs font-bold text-slate-800 dark:text-slate-200 max-w-[85px] truncate">
+                {currentUser.name}
+              </span>
+            </button>
+          ) : (
+            <button
+              onClick={onOpenAuth}
+              className="inline-flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold border border-blue-600/40 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 transition-colors shrink-0"
+              title="چوونەژوورەوە بە فایەربەیس"
+            >
+              <LogIn className="w-3.5 h-3.5 rtl:rotate-180" />
+              <span className="hidden xs:inline">چوونەژوورەوە</span>
+            </button>
+          )}
 
           {/* PROMINENT HEADER "AD PRODUCTS" BUTTON (Visible on all screens) */}
           <button
