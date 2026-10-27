@@ -48,9 +48,9 @@ export const ItemCard: React.FC<ItemCardProps> = ({
 
         {/* Multi-image badge */}
         {hasImages && item.images!.length > 1 && (
-          <div className="absolute top-2.5 end-2.5 bg-slate-900/70 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 backdrop-blur-xs">
-            <Camera className="w-3 h-3" />
-            <span>{item.images!.length}</span>
+          <div className="absolute bottom-2.5 start-2.5 bg-slate-900/75 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 backdrop-blur-xs shadow-xs">
+            <Camera className="w-3 h-3 text-amber-300" />
+            <span>{item.images!.length} وێنە</span>
           </div>
         )}
 

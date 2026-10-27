@@ -12,7 +12,9 @@ import {
   Award,
   CheckCircle2,
   Trash2,
-  RotateCcw
+  RotateCcw,
+  Loader2,
+  Lock,
 } from 'lucide-react';
 import {
   MarketItem,
@@ -93,39 +95,46 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
+  const [authLoading, setAuthLoading] = useState(true);
+
   // Firebase Auth state listener
   useEffect(() => {
     const unsubAuth = subscribeToAuth(async (authUser) => {
-      if (authUser) {
-        try {
+      try {
+        if (authUser) {
           const remoteProfile = await getUserDataFromFirestore(authUser.uid);
-          setProfile((prev) => ({
-            ...prev,
+          setProfile({
             uid: authUser.uid,
-            name: remoteProfile?.name || authUser.displayName || prev.name,
-            email: authUser.email || remoteProfile?.email || prev.email,
-            phone: remoteProfile?.phone || authUser.phoneNumber || prev.phone,
-            phoneNumber: authUser.phoneNumber || remoteProfile?.phoneNumber || prev.phoneNumber,
-            photoURL: authUser.photoURL || remoteProfile?.photoURL || prev.photoURL,
-            faculty: remoteProfile?.faculty || prev.faculty,
-            role: remoteProfile?.role || prev.role,
-            rating: remoteProfile?.rating ?? prev.rating,
-            ratingCount: remoteProfile?.ratingCount ?? prev.ratingCount,
+            name: remoteProfile?.name || authUser.displayName || authUser.email?.split('@')[0] || 'بەکارهێنەر',
+            email: authUser.email || remoteProfile?.email || '',
+            phone: remoteProfile?.phone || authUser.phoneNumber || '',
+            phoneNumber: authUser.phoneNumber || remoteProfile?.phoneNumber,
+            photoURL: authUser.photoURL || remoteProfile?.photoURL,
+            faculty: remoteProfile?.faculty || 'زانکۆ',
+            role: remoteProfile?.role || 'قوتابی',
+            rating: remoteProfile?.rating ?? 5.0,
+            ratingCount: remoteProfile?.ratingCount ?? 1,
             authProvider: authUser.phoneNumber
               ? 'phone'
               : authUser.providerData[0]?.providerId.includes('google')
               ? 'google'
-              : 'guest',
-          }));
-        } catch (e) {
-          console.warn('Error reading user profile from Firestore:', e);
+              : 'email',
+          });
+        } else {
+          setProfile({
+            name: '',
+            email: '',
+            role: 'قوتابی',
+            faculty: '',
+            phone: '',
+            rating: 5.0,
+            ratingCount: 1,
+          });
         }
-      } else {
-        setProfile((prev) => {
-          if (!prev.uid) return prev;
-          const { uid, photoURL, phoneNumber, authProvider, ...rest } = prev;
-          return { ...rest };
-        });
+      } catch (e) {
+        console.warn('Error reading user profile from Firestore:', e);
+      } finally {
+        setAuthLoading(false);
       }
     });
     return () => unsubAuth();
@@ -136,17 +145,17 @@ export default function App() {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed.profile) return parsed.profile;
+        if (parsed.profile && parsed.profile.uid) return parsed.profile;
       }
     } catch (e) {
       console.error(e);
     }
     return {
-      name: 'ئاراس ئەحمەد',
-      email: 'aras.ahmed@univ.edu.iq',
+      name: '',
+      email: '',
       role: 'قوتابی',
-      faculty: 'کۆلێژی زانست - بەشی کۆمپیوتەر',
-      phone: '0750 123 4567',
+      faculty: '',
+      phone: '',
       rating: 5.0,
       ratingCount: 1,
     };
@@ -276,10 +285,25 @@ export default function App() {
 
   // Add Item
   const handleAddItem = (newItem: MarketItem) => {
-    setItems((prev) => [newItem, ...prev]);
+    if (!profile.uid) {
+      showToast('تکایە سەرەتا ئەکاونت دروستبکە یان بچۆ ژوورەوە');
+      setIsAuthModalOpen(true);
+      return;
+    }
+
+    const itemWithSeller: MarketItem = {
+      ...newItem,
+      sellerId: profile.uid,
+      sellerName: profile.name || newItem.sellerName,
+      phone: newItem.phone || profile.phone,
+      faculty: profile.faculty || newItem.faculty,
+      isMine: true,
+    };
+
+    setItems((prev) => [itemWithSeller, ...prev]);
     setActiveTab('home');
     setSelectedCategory('هەموو');
-    addMarketItemToFirestore(newItem).catch((err) =>
+    addMarketItemToFirestore(itemWithSeller).catch((err) =>
       console.warn('Error saving to Firestore:', err)
     );
   };
@@ -411,9 +435,14 @@ export default function App() {
   const handleLogout = async () => {
     try {
       await logoutUser();
-      setProfile((prev) => {
-        const { uid, photoURL, phoneNumber, authProvider, ...rest } = prev;
-        return rest;
+      setProfile({
+        name: '',
+        email: '',
+        role: 'قوتابی',
+        faculty: '',
+        phone: '',
+        rating: 5.0,
+        ratingCount: 1,
       });
       showToast('بە سەرکەوتوویی دەرچوویت لە هەژمار');
     } catch (e) {
@@ -484,17 +513,70 @@ export default function App() {
     return result;
   }, [items, selectedCategory, searchQuery, roleFilter, priceFilter, sortBy]);
 
-  const myItems = useMemo(() => items.filter((i) => i.isMine), [items]);
+  const myItems = useMemo(
+    () => items.filter((i) => i.isMine || (profile.uid && i.sellerId === profile.uid)),
+    [items, profile.uid]
+  );
   const favoriteItems = useMemo(
     () => items.filter((i) => favorites.includes(i.id)),
     [items, favorites]
   );
 
+  // Authentication Loading Screen
+  if (authLoading) {
+    return (
+      <div
+        className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col items-center justify-center p-4"
+        dir={settings.language === 'en' ? 'ltr' : 'rtl'}
+      >
+        <div className="w-16 h-16 rounded-3xl overflow-hidden shadow-xl mb-4 ring-4 ring-blue-500/20 animate-pulse">
+          <img
+            src="/assets/aistudio/Gemini_Generated_Image_dqd0x1dqd0x1dqd0_779672db.jpg"
+            alt="بازاڕی زانکۆ"
+            className="w-full h-full object-cover"
+          />
+        </div>
+        <h1 className="text-xl font-black text-slate-800 dark:text-slate-100 mb-2">بازاڕی زانکۆ</h1>
+        <div className="flex items-center gap-2 text-xs text-blue-600 dark:text-blue-400 font-bold">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          <span>پشکنینی هەژماری بەکارهێنەر...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // Mandatory Authentication Gate (هیچ کەسێک بەبێ دروستکردنی ئەکاونت نەتوانی بچێتە ژوورەوە)
+  if (!profile.uid) {
+    return (
+      <div
+        className="min-h-screen bg-slate-950 flex flex-col justify-between"
+        dir={settings.language === 'en' ? 'ltr' : 'rtl'}
+      >
+        <div id="recaptcha-container"></div>
+        <AuthModal
+          isOpen={true}
+          isGate={true}
+          onAuthSuccess={handleAuthSuccess}
+          onToast={showToast}
+          language={settings.language}
+        />
+        <Toast message={toastMessage} />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors">
       {/* Top Header with Logo, Ad Product Button, and Language Switcher */}
       <Header
-        onOpenAdd={() => setIsAddModalOpen(true)}
+        onOpenAdd={() => {
+          if (!profile.uid) {
+            showToast('تکایە سەرەتا ئەکاونت دروستبکە یان بچۆ ژوورەوە');
+            setIsAuthModalOpen(true);
+          } else {
+            setIsAddModalOpen(true);
+          }
+        }}
         favoritesCount={favorites.length}
         onOpenFavorites={() => setActiveTab('favorites')}
         onOpenUniversities={() => setIsUniversitiesOpen(true)}
@@ -1086,7 +1168,12 @@ export default function App() {
         currentTab={activeTab}
         onTabChange={(tab) => {
           if (tab === 'add') {
-            setIsAddModalOpen(true);
+            if (!profile.uid) {
+              showToast('تکایە سەرەتا ئەکاونت دروستبکە یان بچۆ ژوورەوە');
+              setIsAuthModalOpen(true);
+            } else {
+              setIsAddModalOpen(true);
+            }
           } else {
             setActiveTab(tab as any);
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1134,6 +1221,7 @@ export default function App() {
         onAddItem={handleAddItem}
         profile={profile}
         onToast={showToast}
+        onOpenAuth={() => setIsAuthModalOpen(true)}
       />
 
       {/* Campus Assistant Chatbot Modal */}

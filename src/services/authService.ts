@@ -3,6 +3,9 @@ import {
   GoogleAuthProvider,
   RecaptchaVerifier,
   signInWithPhoneNumber,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  updateProfile,
   signOut,
   onAuthStateChanged,
   User,
@@ -98,6 +101,45 @@ export const verifyOtpCode = async (otpCode: string): Promise<User> => {
     return user;
   } catch (error: any) {
     console.error('کۆدەکە هەڵەیە یان بەسەرچووە:', error);
+    throw error;
+  }
+};
+
+// ٣. دروستکردنی ئەکاونت بە ئیمەیڵ و پاسۆرد (Create Account with Email & Password)
+export const registerWithEmail = async (
+  email: string,
+  pass: string,
+  extra: { name: string; faculty: string; role: 'قوتابی' | 'مامۆستا' | 'کارمەند'; phone: string }
+): Promise<User> => {
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, email.trim(), pass);
+    const user = cred.user;
+    if (extra.name.trim()) {
+      await updateProfile(user, { displayName: extra.name.trim() });
+    }
+    await saveUserData(user, {
+      name: extra.name.trim(),
+      faculty: extra.faculty.trim(),
+      role: extra.role,
+      phone: extra.phone.trim(),
+      email: user.email || email.trim(),
+    });
+    return user;
+  } catch (error: any) {
+    console.error('هەڵە لە دروستکردنی ئەکاونت:', error);
+    throw error;
+  }
+};
+
+// ٤. چوونەژوورەوە بە ئیمەیڵ و وشەی نهێنی (Sign In with Email & Password)
+export const loginWithEmail = async (email: string, pass: string): Promise<User> => {
+  try {
+    const cred = await signInWithEmailAndPassword(auth, email.trim(), pass);
+    const user = cred.user;
+    await saveUserData(user);
+    return user;
+  } catch (error: any) {
+    console.error('هەڵە لە چوونەژوورەوە بە ئیمەیڵ:', error);
     throw error;
   }
 };

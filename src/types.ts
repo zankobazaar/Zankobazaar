@@ -23,6 +23,7 @@ export interface MarketItem {
   colorHex?: string;
   emoji?: string;
   location?: string;
+  sellerId?: string;
   sellerRating?: number;
   sellerRatingCount?: number;
   images?: string[]; // Multiple photos support
@@ -40,7 +41,7 @@ export interface UserProfile {
   photoURL?: string;
   rating?: number;
   ratingCount?: number;
-  authProvider?: 'google' | 'phone' | 'guest';
+  authProvider?: 'google' | 'phone' | 'email' | 'guest';
 }
 
 export interface AppSettings {
