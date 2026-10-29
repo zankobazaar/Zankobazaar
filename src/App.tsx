@@ -35,6 +35,8 @@ import { UniversitiesModal } from './components/UniversitiesModal';
 import { SellerChatModal } from './components/SellerChatModal';
 import { ProfileView } from './components/ProfileView';
 import { AuthModal } from './components/AuthModal';
+import { LiveVoiceModal } from './components/LiveVoiceModal';
+import { CampusMapsModal } from './components/CampusMapsModal';
 import { Toast } from './components/Toast';
 import {
   subscribeToMarketItems,
@@ -193,6 +195,9 @@ export default function App() {
   const [isChatbotOpen, setIsChatbotOpen] = useState(false);
   const [isUniversitiesOpen, setIsUniversitiesOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isLiveVoiceOpen, setIsLiveVoiceOpen] = useState(false);
+  const [isCampusMapsOpen, setIsCampusMapsOpen] = useState(false);
+  const [campusMapsQuery, setCampusMapsQuery] = useState<string | undefined>(undefined);
   const [chattingItem, setChattingItem] = useState<MarketItem | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -579,6 +584,11 @@ export default function App() {
         favoritesCount={favorites.length}
         onOpenFavorites={() => setActiveTab('favorites')}
         onOpenUniversities={() => setIsUniversitiesOpen(true)}
+        onOpenLiveVoice={() => setIsLiveVoiceOpen(true)}
+        onOpenCampusMaps={() => {
+          setCampusMapsQuery(undefined);
+          setIsCampusMapsOpen(true);
+        }}
         settings={settings}
         currentUser={profile}
         onOpenAuth={() => setIsAuthModalOpen(true)}
@@ -1162,6 +1172,33 @@ export default function App() {
         )}
       </main>
 
+      {/* Floating Live Voice & Maps Quick Dock */}
+      <div className="fixed bottom-20 end-4 z-40 flex flex-col items-end gap-2.5">
+        <button
+          type="button"
+          onClick={() => setIsLiveVoiceOpen(true)}
+          className="group flex items-center gap-2 px-3 py-2.5 rounded-2xl bg-gradient-to-r from-violet-600 via-indigo-600 to-blue-600 hover:from-violet-500 hover:to-blue-500 text-white font-bold text-xs shadow-lg shadow-violet-500/30 transition-all hover:scale-105 active:scale-95 cursor-pointer"
+          title="گفتوگۆی دەنگی ڕاستەوخۆ بە Gemini 3.8 Live"
+        >
+          <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+          <span className="hidden sm:inline">گفتوگۆی دەنگی (Live API)</span>
+          <span className="text-sm">🎙️</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            setCampusMapsQuery(undefined);
+            setIsCampusMapsOpen(true);
+          }}
+          className="group flex items-center gap-2 px-3 py-2 rounded-2xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 hover:border-emerald-500 font-bold text-xs shadow-md transition-all hover:scale-105 active:scale-95 cursor-pointer"
+          title="نەخشەی زانکۆ و شوێنی سەلامەتی چاوپێکەوتن لە Google Maps"
+        >
+          <span className="hidden sm:inline">نەخشەی زانکۆ (Maps)</span>
+          <span className="text-sm">📍</span>
+        </button>
+      </div>
+
       {/* Floating Bottom Nav */}
       <Navigation
         currentTab={activeTab}
@@ -1195,6 +1232,10 @@ export default function App() {
           onDeleteItem={handleDeleteItem}
           onRateSeller={handleRateSeller}
           onOpenSellerChat={(it) => setChattingItem(it)}
+          onOpenCampusMaps={(query) => {
+            setCampusMapsQuery(query);
+            setIsCampusMapsOpen(true);
+          }}
           onOpenReport={(title) => {
             setActiveTab('profile');
             showToast(`فۆرمی ڕاپۆرتکردن بۆ "${title}" کرایەوە`);
@@ -1227,10 +1268,31 @@ export default function App() {
       <ChatbotModal
         isOpen={isChatbotOpen}
         onClose={() => setIsChatbotOpen(false)}
+        onOpenLiveVoice={() => setIsLiveVoiceOpen(true)}
+        onOpenCampusMaps={() => {
+          setCampusMapsQuery(undefined);
+          setIsCampusMapsOpen(true);
+        }}
         onNavigateAdd={() => {
           setIsChatbotOpen(false);
           setIsAddModalOpen(true);
         }}
+      />
+
+      {/* Gemini 3.8 Live API Voice Modal */}
+      <LiveVoiceModal
+        isOpen={isLiveVoiceOpen}
+        onClose={() => setIsLiveVoiceOpen(false)}
+      />
+
+      {/* Google Maps Grounding Modal */}
+      <CampusMapsModal
+        isOpen={isCampusMapsOpen}
+        onClose={() => {
+          setIsCampusMapsOpen(false);
+          setCampusMapsQuery(undefined);
+        }}
+        initialQuery={campusMapsQuery}
       />
 
       {/* Universities Directory Modal */}

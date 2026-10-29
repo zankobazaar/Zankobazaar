@@ -37,6 +37,7 @@ interface ItemDetailModalProps {
   onOpenReport?: (itemTitle: string) => void;
   onRateSeller?: (itemId: string, rating: number) => void;
   onOpenSellerChat?: (item: MarketItem) => void;
+  onOpenCampusMaps?: (query?: string) => void;
 }
 
 export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
@@ -52,6 +53,7 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
   onOpenReport,
   onRateSeller,
   onOpenSellerChat,
+  onOpenCampusMaps,
 }) => {
   const t = TRANSLATIONS[settings.language] || TRANSLATIONS.ckb;
   const [quickMessage, setQuickMessage] = useState('');
@@ -328,19 +330,32 @@ export const ItemDetailModal: React.FC<ItemDetailModalProps> = ({
           </div>
         </div>
 
-        {/* ========================================================================= */}
-        {/* DIRECT SELLER CHAT & VOICE NOTE BUTTON (چات و نامەی دەنگی لەگەڵ فرۆشیار)   */}
-        {/* ========================================================================= */}
-        <div className="mb-4">
+        {/* Direct Seller Chat & Google Maps Campus Meetup Buttons */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
           <button
             type="button"
             onClick={() => onOpenSellerChat && onOpenSellerChat(item)}
-            className="w-full py-3 px-4 rounded-2xl bg-gradient-to-r from-indigo-600 via-blue-600 to-blue-700 hover:from-indigo-700 hover:to-blue-800 text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-2.5 shadow-md shadow-blue-500/25 transition-transform hover:scale-[1.01] active:scale-98"
+            className="w-full py-3 px-3 rounded-2xl bg-gradient-to-r from-indigo-600 via-blue-600 to-blue-700 hover:from-indigo-700 hover:to-blue-800 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-sm transition-transform active:scale-98 cursor-pointer"
           >
             <MessageCircle className="w-4 h-4" />
-            <span>چات لەگەڵ فرۆشیار و ناردنی دەنگ (Voice Note)</span>
+            <span>چات لەگەڵ فرۆشیار</span>
             <Mic className="w-3.5 h-3.5 text-amber-300" />
           </button>
+
+          {onOpenCampusMaps && (
+            <button
+              type="button"
+              onClick={() =>
+                onOpenCampusMaps(
+                  `باشترین و سەلامەتترین شوێنی بینین و گۆڕینەوەی ئەم کاڵایە لە دەوروبەری ${item.faculty || 'کەمپەسی زانکۆ'} لەسەر Google Maps چییە؟ شوێنەکان بە بەستەر دیاری بکە.`
+                )
+              }
+              className="w-full py-3 px-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800/80 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 font-extrabold text-xs flex items-center justify-center gap-2 shadow-xs transition-colors cursor-pointer"
+            >
+              <MapPin className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <span>شوێنی چاوپێکەوتن (Maps)</span>
+            </button>
+          )}
         </div>
 
         {/* VISUALLY APPEALING STAR-RATING INPUT COMPONENT (Using Lucide Icons) */}

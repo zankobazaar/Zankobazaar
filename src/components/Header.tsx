@@ -1,5 +1,16 @@
 import React from 'react';
-import { Moon, Sun, Heart, Plus, Globe, Building2, User as UserIcon, LogIn } from 'lucide-react';
+import {
+  Moon,
+  Sun,
+  Heart,
+  Plus,
+  Globe,
+  Building2,
+  User as UserIcon,
+  LogIn,
+  Mic,
+  MapPin,
+} from 'lucide-react';
 import { AppSettings, LanguageCode, UserProfile } from '../types';
 import { TRANSLATIONS } from '../utils/translations';
 
@@ -8,6 +19,8 @@ interface HeaderProps {
   favoritesCount: number;
   onOpenFavorites: () => void;
   onOpenUniversities: () => void;
+  onOpenLiveVoice?: () => void;
+  onOpenCampusMaps?: () => void;
   settings: AppSettings;
   onToggleTheme: () => void;
   onSelectLanguage: (lang: LanguageCode) => void;
@@ -21,6 +34,8 @@ export const Header: React.FC<HeaderProps> = ({
   favoritesCount,
   onOpenFavorites,
   onOpenUniversities,
+  onOpenLiveVoice,
+  onOpenCampusMaps,
   settings,
   onToggleTheme,
   onSelectLanguage,
@@ -60,23 +75,69 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </button>
 
-        {/* Zone 2: Middle Navigation Shortcut to Universities Directory */}
-        <div className="hidden lg:flex items-center gap-4 text-xs font-semibold text-slate-600 dark:text-slate-300">
+        {/* Zone 2: Middle Navigation Shortcut to Universities Directory, Maps Grounding & Live Voice */}
+        <div className="hidden md:flex items-center gap-2 text-xs font-semibold text-slate-600 dark:text-slate-300">
           <button
             onClick={onOpenUniversities}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-blue-700 dark:text-blue-400"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-blue-700 dark:text-blue-400 cursor-pointer"
           >
             <Building2 className="w-4 h-4" />
             <span>{t.universities}</span>
           </button>
+
+          {onOpenCampusMaps && (
+            <button
+              onClick={onOpenCampusMaps}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/80 hover:bg-emerald-100 transition-colors cursor-pointer"
+              title="شوێنی چاوپێکەوتن لەسەر نەخشەی Google Maps"
+            >
+              <MapPin className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span>نەخشە (Maps)</span>
+            </button>
+          )}
+
+          {onOpenLiveVoice && (
+            <button
+              onClick={onOpenLiveVoice}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-violet-50 dark:bg-violet-950/60 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800/80 hover:bg-violet-100 transition-colors cursor-pointer"
+              title="گفتوگۆی دەنگی ڕاستەوخۆ بە Gemini 3.8 Live"
+            >
+              <Mic className="w-3.5 h-3.5 text-violet-600 dark:text-violet-400" />
+              <span>دەنگ (Live API)</span>
+            </button>
+          )}
         </div>
 
         {/* Zone 3: Actions + Prominent Header "Post Ad" Button */}
-        <div className="flex items-center gap-1.5 sm:gap-2.5">
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          {/* Maps Button (Mobile) */}
+          {onOpenCampusMaps && (
+            <button
+              onClick={onOpenCampusMaps}
+              className="md:hidden w-8 h-8 rounded-xl flex items-center justify-center text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 transition-colors cursor-pointer"
+              title="نەخشەی زانکۆ"
+              aria-label="Google Maps"
+            >
+              <MapPin className="w-4 h-4" />
+            </button>
+          )}
+
+          {/* Live Voice Button (Mobile) */}
+          {onOpenLiveVoice && (
+            <button
+              onClick={onOpenLiveVoice}
+              className="md:hidden w-8 h-8 rounded-xl flex items-center justify-center text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-950/50 transition-colors cursor-pointer"
+              title="گفتوگۆی دەنگی"
+              aria-label="Live Voice"
+            >
+              <Mic className="w-4 h-4" />
+            </button>
+          )}
+
           {/* Universities Button (Mobile / Tablet icon) */}
           <button
             onClick={onOpenUniversities}
-            className="lg:hidden w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="md:hidden w-8 h-8 rounded-xl flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
             title={t.universities}
             aria-label={t.universities}
           >
