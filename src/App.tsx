@@ -552,7 +552,6 @@ export default function App() {
         className="min-h-screen bg-slate-950 flex flex-col justify-between"
         dir={settings.language === 'en' ? 'ltr' : 'rtl'}
       >
-        <div id="recaptcha-container"></div>
         <AuthModal
           isOpen={true}
           isGate={true}

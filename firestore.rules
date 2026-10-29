@@ -18,31 +18,31 @@ service cloud.firestore {
     match /items/{itemId} {
       allow get: if isValidId(itemId);
       allow list: if true;
-      allow create: if isSignedIn() && isValidId(itemId) 
+      allow create: if isValidId(itemId) 
         && request.resource.data.title is string 
         && request.resource.data.title.size() <= 120
         && request.resource.data.price is number;
-      allow update: if isSignedIn() && isValidId(itemId);
-      allow delete: if isSignedIn() && isValidId(itemId);
+      allow update: if isValidId(itemId);
+      allow delete: if isValidId(itemId);
     }
 
     // User profiles collection
     match /users/{userId} {
       allow get: if isValidId(userId);
       allow list: if true;
-      allow write: if isSignedIn() && isValidId(userId);
+      allow write: if isValidId(userId);
     }
 
     // Direct seller chats
     match /chats/{chatId}/messages/{messageId} {
       allow get: if isValidId(chatId) && isValidId(messageId);
       allow list: if isValidId(chatId);
-      allow write: if isSignedIn() && isValidId(chatId) && isValidId(messageId);
+      allow write: if isValidId(chatId) && isValidId(messageId);
     }
 
     // Connectivity test
     match /test/{docId} {
-      allow read: if true;
+      allow read, write: if true;
     }
   }
 }

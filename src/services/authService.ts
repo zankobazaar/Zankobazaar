@@ -1,115 +1,70 @@
 import {
   signInWithPopup,
   GoogleAuthProvider,
-  RecaptchaVerifier,
-  signInWithPhoneNumber,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   updateProfile,
   signOut,
   onAuthStateChanged,
   User,
-  ConfirmationResult,
 } from 'firebase/auth';
 import { doc, setDoc, getDoc } from 'firebase/firestore';
 import { auth, db, handleFirestoreError, OperationType } from '../lib/firebase';
-import { UserProfile } from '../types';
+import { UserProfile, UserRole } from '../types';
 
-declare global {
-  interface Window {
-    recaptchaVerifier?: RecaptchaVerifier;
-    confirmationResult?: ConfirmationResult;
+// Format Iraqi and international phone numbers cleanly (used for item contact details)
+export function formatPhoneNumber(rawPhone: string): string {
+  let cleaned = rawPhone.trim().replace(/[\s\-\(\)]/g, '');
+  if (cleaned.startsWith('07')) {
+    cleaned = '+964' + cleaned.substring(1);
+  } else if (/^7[3-9]\d{8}$/.test(cleaned)) {
+    cleaned = '+964' + cleaned;
+  } else if (cleaned.startsWith('00')) {
+    cleaned = '+' + cleaned.substring(2);
+  } else if (!cleaned.startsWith('+') && cleaned.length > 0) {
+    cleaned = '+' + cleaned;
   }
+  return cleaned;
 }
 
-// ١. چوونەژوورەوە بە گۆگل (Login with Google)
+// ١. چوونەژوورەوە و خۆتۆمارکردن بە گووگڵ (Sign In / Up with Google)
 const googleProvider = new GoogleAuthProvider();
+googleProvider.setCustomParameters({
+  prompt: 'select_account',
+});
 
-export const loginWithGoogle = async (): Promise<User> => {
+export const loginWithGoogle = async (additionalData?: Partial<UserProfile>): Promise<User> => {
   try {
     const result = await signInWithPopup(auth, googleProvider);
     const user = result.user;
-    console.log('سەرکەوتوو بوو:', user);
-    await saveUserData(user);
+    console.log('چوونەژوورەوەی گووگڵ سەرکەوتوو بوو:', user.uid);
+    await saveUserData(user, additionalData);
     return user;
   } catch (error: any) {
     console.error('هەڵە لە چوونەژوورەوەی گووگڵ:', error);
-    throw error;
-  }
-};
-
-// ٢. چوونەژوورەوە بە ژمارەی مۆبایل (Login with Phone)
-export const setupRecaptcha = (containerId: string = 'recaptcha-container'): RecaptchaVerifier => {
-  // Clear previous verifier if any
-  if (window.recaptchaVerifier) {
-    try {
-      window.recaptchaVerifier.clear();
-    } catch (e) {
-      // Ignored
+    if (error.code === 'auth/operation-not-allowed') {
+      throw new Error(
+        'خزمەتگوزاری چوونەژوورەوەی Google لە Firebase Console چالاک نەکراوە (Authentication > Sign-in method > Google).'
+      );
     }
-  }
-
-  const verifier = new RecaptchaVerifier(auth, containerId, {
-    size: 'invisible',
-    callback: () => {
-      console.log('reCAPTCHA solved');
-    },
-    'expired-callback': () => {
-      console.warn('reCAPTCHA expired');
-    },
-  });
-
-  window.recaptchaVerifier = verifier;
-  return verifier;
-};
-
-export const loginWithPhone = async (
-  phoneNumber: string,
-  containerId: string = 'recaptcha-container'
-): Promise<ConfirmationResult> => {
-  try {
-    const appVerifier = setupRecaptcha(containerId);
-    // Ensure proper international formatting (defaulting to +964 if entered as 07...)
-    let formattedPhone = phoneNumber.trim().replace(/\s+/g, '');
-    if (formattedPhone.startsWith('07')) {
-      formattedPhone = '+964' + formattedPhone.substring(1);
-    } else if (!formattedPhone.startsWith('+')) {
-      formattedPhone = '+' + formattedPhone;
+    if (
+      error.code === 'auth/token-service-api-has-not-been-used' ||
+      error.message?.includes('token-service-api-has-not-been-used') ||
+      error.message?.includes('securetoken.googleapis.com')
+    ) {
+      throw new Error(
+        'پێویستە خزمەتگوزاری Secure Token API لە Google Cloud چالاک بکرێت (auth/token-service-api-has-not-been-used).'
+      );
     }
-
-    const confirmationResult = await signInWithPhoneNumber(auth, formattedPhone, appVerifier);
-    window.confirmationResult = confirmationResult;
-    console.log('کۆدی پشتڕاستکردنەوە نێردرا بۆ مۆبایلەکەت:', formattedPhone);
-    return confirmationResult;
-  } catch (error: any) {
-    console.error('هەڵە لە ناردنی کۆد:', error);
     throw error;
   }
 };
 
-// دوای ئەوەی بەکارهێنەر کۆدەکەی نووسی، ئەمە کار پێبکە:
-export const verifyOtpCode = async (otpCode: string): Promise<User> => {
-  if (!window.confirmationResult) {
-    throw new Error('تکایە سەرەتا ژمارەی مۆبایل بنووسە و داوای کۆد بکە');
-  }
-
-  try {
-    const result = await window.confirmationResult.confirm(otpCode.trim());
-    const user = result.user;
-    console.log('بە سەرکەوتوویی چووە ژوورەوە:', user);
-    await saveUserData(user);
-    return user;
-  } catch (error: any) {
-    console.error('کۆدەکە هەڵەیە یان بەسەرچووە:', error);
-    throw error;
-  }
-};
-
-// ٣. دروستکردنی ئەکاونت بە ئیمەیڵ و پاسۆرد (Create Account with Email & Password)
+// ٢. دروستکردنی ئەکاونت بە ئیمەیڵ و پاسۆرد (Create Account with Email & Password)
 export const registerWithEmail = async (
   email: string,
   pass: string,
-  extra: { name: string; faculty: string; role: 'قوتابی' | 'مامۆستا' | 'کارمەند'; phone: string }
+  extra: { name: string; faculty: string; role: UserRole; phone?: string }
 ): Promise<User> => {
   try {
     const cred = await createUserWithEmailAndPassword(auth, email.trim(), pass);
@@ -121,17 +76,22 @@ export const registerWithEmail = async (
       name: extra.name.trim(),
       faculty: extra.faculty.trim(),
       role: extra.role,
-      phone: extra.phone.trim(),
+      phone: extra.phone ? extra.phone.trim() : '',
       email: user.email || email.trim(),
     });
     return user;
   } catch (error: any) {
     console.error('هەڵە لە دروستکردنی ئەکاونت:', error);
+    if (error.code === 'auth/operation-not-allowed') {
+      throw new Error(
+        'خزمەتگوزاری Email/Password لە Firebase Console چالاک نەکراوە (Authentication > Sign-in method > Email/Password).'
+      );
+    }
     throw error;
   }
 };
 
-// ٤. چوونەژوورەوە بە ئیمەیڵ و وشەی نهێنی (Sign In with Email & Password)
+// ٣. چوونەژوورەوە بە ئیمەیڵ و وشەی نهێنی (Sign In with Email & Password)
 export const loginWithEmail = async (email: string, pass: string): Promise<User> => {
   try {
     const cred = await signInWithEmailAndPassword(auth, email.trim(), pass);
@@ -144,7 +104,7 @@ export const loginWithEmail = async (email: string, pass: string): Promise<User>
   }
 };
 
-// نموونەی پاشەکەوتکردنی زانیاری بەکارهێنەر دوای چوونەژوورەوە
+// پاشەکەوتکردنی زانیاری بەکارهێنەر لە بنکەدراوەی Firestore
 export const saveUserData = async (
   user: User,
   additionalData?: Partial<UserProfile>

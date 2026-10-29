@@ -7,6 +7,24 @@ const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 export const auth = getAuth(app);
 
+// Self-heal token session if Google Cloud Secure Token API was not used before or was corrupted
+auth.onAuthStateChanged(async (currentUser) => {
+  if (currentUser) {
+    try {
+      await currentUser.getIdToken();
+    } catch (err: any) {
+      if (
+        err?.code === 'auth/token-service-api-has-not-been-used' ||
+        err?.message?.includes('token-service-api-has-not-been-used') ||
+        err?.message?.includes('securetoken.googleapis.com')
+      ) {
+        console.warn('Clearing stale user auth session due to token service availability in GCP:', err);
+        await auth.signOut().catch(() => {});
+      }
+    }
+  }
+});
+
 export enum OperationType {
   CREATE = 'create',
   UPDATE = 'update',
@@ -58,6 +76,21 @@ export async function testConnection() {
   try {
     await getDocFromServer(doc(db, 'test', 'connection'));
   } catch (error) {
+    if (
+      error instanceof Error &&
+      (error.message.includes('token-service-api-has-not-been-used') ||
+        error.message.includes('securetoken.googleapis.com'))
+    ) {
+      console.warn('Secure Token API requires activation in Google Cloud. Resetting session to restore Firestore.');
+      try {
+        await auth.signOut();
+        await getDocFromServer(doc(db, 'test', 'connection'));
+        return;
+      } catch (inner) {
+        // Fall through
+      }
+    }
+
     if (error instanceof Error && error.message.includes('the client is offline')) {
       console.error('Please check your Firebase configuration.');
     }
